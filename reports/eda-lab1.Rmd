@@ -1,5 +1,5 @@
 ---
-title: "EDA Lab1"
+title: "Ciência de Dados Descritiva - Lab1 (EDA)"
 output:
   html_document:
     df_print: paged
@@ -16,10 +16,12 @@ library(here)
 theme_set(theme_bw())
 ```
 
+# Informações iniciais
+
 Para a análise, iremos utilizar os dados coletados para as séries Sherlock, Mr. Robot e Sense8.
 
 ```{r}
-episodes = read_csv(here("data/series_from_imdb.csv"), 
+series_imdb = read_csv(here("data/series_from_imdb.csv"), 
                     progress = FALSE,
                     col_types = cols(.default = col_double(), 
                                      series_name = col_character(), 
@@ -30,24 +32,172 @@ episodes = read_csv(here("data/series_from_imdb.csv"),
 
 ```
 
-Qual das séries que você escolheu é mais bem avaliada no IMDB? A diferença é grande? Pequena? Muda de acordo com as temporadas da série? 
+Antes de iniciar as análises, é necessário informar que por tomaremos por _avaliação_ o significado literal, ou seja, a avaliação dada para cada episódio das séries escolhidas. 
 
-A avaliação das séries muda de acordo com as temporadas?
+Para o conjunto de dados que iremos trabalhar temos que o campo _avaliação_ se comporta desta maneira, como informam as visualizações abaixo:
 
 ```{r}
-episodes %>%
-    arrange(episodes$series_name) %>%
-    mutate (series_f_name = paste(series_name, "- Season", season, sep = ' ')) %>%
-    ggplot(aes(x = series_f_name, y = user_rating, color = series_name)) + 
-    geom_boxplot() +
-    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+summary(series_imdb %>%
+            select(user_rating))
+
+series_imdb %>%
+  ggplot(aes(user_rating)) +
+  geom_histogram(binwidth = .1, fill = "#007291") +
+  scale_x_continuous(breaks = seq(7, 10, 0.5)) +
+  labs(y = "Número de ocorrências", x = "Avaliações dos episódios")
 
 ```
 
-Com a visualização abaixo, é possível perceber que há sim, especialmente para Sense8 e Sherlock, uma grande diferença entre a distribuição das avaliações ao decorrer das temporadas.
+Dados os valores dos quartis, é possível perceber que pelo menos __50%__ dos valores estão concentrados em avaliações entre 8.6 e 9.2. Isso significa que as séries selecionadas possuem avaliações bastante positivas, visto que a mediana está em 8.9. 
 
-Mr Robot - A distribuição de valores de avaliação para a primeira temporada está entre ~8.6 e ~9.7 aproximadamente, por outro lado, apesar de possuírem o mesmo valor para a mediana (um pouco mais de 8.7), a segunda temporada possui uma distribuição mais concentrada em valores entre ~8.6 e ~9.1, o que nos dá a entender que a opinião das pessoas que assistiram e avaliaram seguiram um mesmo consenso. 
+# Perguntas
 
+## Qual das séries que você escolheu é mais bem avaliada no IMDB? A diferença é grande? Pequena? 
 
-Qual das séries que você escolheu tem episódios de qualidade mais irregular segundo o IMDB? A diferença é grande? Pequena?
+Por se tratar de uma pergunta subjetiva, não há uma forma correta de definir a série mais bem avaliada. 
+
+A primeira e talvez mais tradicional forma é verificar a distribuição de notas para cada série. Encapsulando as temporadas e episódios, iremos utilizar a __média__ e __mediana__ para visualizar a série mais bem avaliada.
+
+```{r}
+
+series_imdb %>%
+    group_by(series_name) %>%
+    summarise(median_rating = median(user_rating),
+              mean_rating = mean(user_rating)) %>%
+    ggplot(aes(series_name)) +
+    geom_point(aes(y = mean_rating, color = 'Média')) +
+    geom_point(aes(y = median_rating, color = 'Mediana')) +
+    labs(x = "Série", y = "Notas de Avaliação", color = "Métrica")
     
+
+```
+
+Adotando essas formas de comparação, se adotarmos a __média__ como fator determinante para uma série ser _bem avaliada_ temos que a escolhida é __Mr Robot__. 
+
+Já se adotarmos a __mediana__, temos um aparente empate entre __Sense8__ e __Sherlock__.
+
+Portanto, essa não é a resposta que queremos. Devemos utilizar outra métrica de avaliação.
+
+No nosso conjunto de dados temos as variáveis r1, r2... r10, que descrevem a proporção de avaliações com notas de 1 a 10.
+``` 
+"r1"          "r2"          "r3"          "r4"          "r5"          "r6"         "r7"          "r8"          "r9"          "r10"
+```
+
+Utilizaremos dessas variáveis como métrica para descobrir a série mais __bem avaliada__, ou seja, a que possuir mais ocorrências de notas maiores com mais constância.
+
+```{r}
+
+series_imdb %>%
+    group_by(series_name) %>%
+    arrange(series_name, season) %>%
+    ggplot(aes(x = series_ep)) +
+    geom_line(aes(y = r7, color = "Nota 7")) +
+    geom_line(aes(y = r8, color = "Nota 8")) +
+    geom_line(aes(y = r9, color = "Nota 9")) +
+    geom_line(aes(y = r10, color = "Nota 10")) +
+    facet_wrap(~ series_name) +
+    labs(x = "Número do episódio", y = "Porcentagem de usuários", 
+         color = "Notas de avaliação")
+
+```
+
+Com essa nova visualização, podemos perceber coisas interessantes:
+
+### Mr Robot
+
+É possível perceber que para os episódios entre 7 e 10 e entre 12 e 17 a porcentagem de r10 aumenta drasticamente, o que nos possibilita pensar que esses são os episódios em que a série possui um andamento e um desenvolvimento de roteiro mais interessante para o espectador, o que também nos leva a considerar que a série possui muitos altos e baixos. 
+
+### Sense8
+
+Para Sense8, é possível perceber que a porcentagem de r10 é maior de 50% para mais da metade dos episódios da série, o que nos permite observar que a série se apresenta mais constante em suas avaliações.
+
+Se observarmos os episódios partindo do 10 em diante, é possível perceber claramente a constância da série em apresentar uma boa qualidade para os espectadores, visto que há uma crescente muito relevante para r10.
+
+### Sherlock
+
+De forma semelhante a Sense8, Sherlock possui também uma porcentagem de r10 maior de 50% para mais da metade dos seus episódios, contudo, não apresenta a mesma constância. É possível perceber, a exemplo do episódio entre o 10 e 15 (talvez o 12 e 13) que há uma queda bem drástica. Que pode ser explicada ao analisar os episódios, onde um deles é um episódio extra de Natal _(The Abominable Bride)_.
+
+### Conclusão
+
+De acordo com a métrica selecionada, temos que há novamente um __empate__ como ocorreu ao analisarmos a _mediana_ mais acima, portanto, como critério de desempate vamos adotar a __constância__ como sendo o fator determinante. 
+
+Portanto, chegamos à conclusão que __Sense8__ possui uma maior constância e merece o título de __série mais bem avaliada__ do Lab1.
+
+
+```(~˘▾˘)~  Congrats!!!  ~(˘▾˘~)```
+
+
+## A avaliação das séries muda de acordo com as temporadas?
+
+```{r}
+
+series_imdb %>%
+    ggplot(aes(season, user_rating, color = season)) +
+    geom_boxplot() +
+    geom_jitter(width = .2, alpha = .6) +
+    facet_wrap(~series_name) +
+    labs(x = "Temporada", y = "Nota dos episódios", color = "Temporada")
+
+```
+
+Com a visualização acima, é possível perceber que há sim, especialmente para Sense8 e Sherlock, uma grande diferença entre a distribuição das avaliações ao decorrer das temporadas.
+
+### Mr Robot
+```{r}
+
+prim_temp <- series_imdb %>% 
+                filter(series_name == "Mr Robot", season == "1") %>%
+                mutate(rating_prim = user_rating) %>%
+                select(rating_prim)
+
+seg_temp <- series_imdb %>% 
+                filter(series_name == "Mr Robot", season == "2") %>%
+                mutate(rating_seg = user_rating) %>%
+                select(rating_seg)
+
+summary(merge(prim_temp, seg_temp))
+
+```
+
+A distribuição de valores de avaliação para a primeira temporada está entre 8.6 e 9.2 para o primeiro e terceiro quartil respectivamente, por outro lado, apesar de possuírem o mesmo valor para a mediana (8.8), a segunda temporada possui uma distribuição mais concentrada em valores entre 8.6 e 9.0, ou seja, um __IQR__ _(intervalo interquartil)_ relativamente baixo, o que nos dá a entender que a opinião das pessoas que assistiram e avaliaram os episódios da segunda temporada seguiram um mesmo consenso. 
+
+
+### Sense8
+```{r}
+
+prim_temp <- series_imdb %>% 
+                filter(series_name == "Sense8", season == "1") %>%
+                mutate(rating_prim = user_rating) %>%
+                select(rating_prim)
+
+seg_temp <- series_imdb %>% 
+                filter(series_name == "Sense8", season == "2") %>%
+                mutate(rating_seg = user_rating) %>%
+                select(rating_seg)
+
+summary(merge(prim_temp, seg_temp))
+
+```
+
+A primeira vista é possível perceber uma diferença muito grande entre as temporadas, pois enquanto a primeira temporada possui mediana próxima de 8.6 com alguns valores considerados _outliers_ com avaliações muito mais baixas que o comum (7.5), a segunda temporada possui uma concentração de mais de __50%__ (considerando partes dos quartis) com avaliação superior à 9.0 o que nos diz que, da mesma forma que ocorreu na segunda temorada de Mr Robot, também temos aqui um consenso entre os espectadores da série.
+
+### Sherlock
+```{r}
+
+terc_temp <- series_imdb %>% 
+                filter(series_name == "Sherlock", season == "3") %>%
+                mutate(rating_terc = user_rating) %>%
+                select(rating_terc)
+
+qua_temp <- series_imdb %>% 
+                filter(series_name == "Sherlock", season == "4") %>%
+                mutate(rating_qua = user_rating) %>%
+                select(rating_qua)
+
+summary(merge(terc_temp, qua_temp))
+
+```
+
+Apesar de ter poucos episódios por temporada, ainda assim é possível perceber o desenvolvimento da série. Nas transições de cada temporada é possível perceber mudanças muito descrepantes em relação a avaliação por episódio. O que podemos perceber de primeira é a queda de avaliação que acontece da terceira para a quarta temporada, onde a série tinha uma mediana de avaliação superior a 9.0 e na quarta temporada desceu abruptamente para 8.3.
+ 
+## Qual das séries que você escolheu tem episódios de qualidade mais irregular segundo o IMDB? A diferença é grande? Pequena?
