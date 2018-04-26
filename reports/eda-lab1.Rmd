@@ -112,7 +112,7 @@ Com essa nova visualização, podemos perceber coisas interessantes:
 
 ### Mr Robot
 
-É possível perceber que para os episódios entre 7 e 10 e entre 12 e 17 a porcentagem de r10 aumenta drasticamente, o que nos possibilita pensar que esses são os episódios em que a série possui um andamento e um desenvolvimento de roteiro mais interessante para o espectador, o que também nos leva a considerar que a série possui muitos altos e baixos. 
+É possível perceber que para os episódios entre 7 e 10 e entre 12 e 17 a porcentagem de r10 aumenta drasticamente, o que nos possibilita pensar que esses são os episódios em que a série possui um andamento e um desenvolvimento de roteiro mais interessante para o espectador ou um momento em que há o _clímax_ na temporada, o que também nos leva a considerar que a série possui muitos altos e baixos. 
 
 ### Sense8
 
@@ -208,7 +208,7 @@ A partir das análises e da visualização do gráfico, é possível perceber qu
 
 ### Métrica 1 - Amplitude
 
-Para avaliar a irregularidade da qualidade de um episódio, iremos utilizar o conceito de variação, ou seja, uma série possui episódios irregulares quando a diferença entre um episódio e seu próximo se torna muito grande.
+Para avaliar a irregularidade da qualidade de um episódio, iremos utilizar o conceito de amplitude, ou seja, uma série possui episódios irregulares quando a diferença entre um episódio e seu próximo se torna muito grande.
 
 ```{r}
 
@@ -217,7 +217,7 @@ series_imdb %>%
     ggplot(aes(series_ep, user_rating.lag, color = as.factor(season))) +
     geom_jitter(width = .1) +
     geom_line() +
-    geom_line(aes(y = 0)) +
+    geom_hline(yintercept = 0) +
     facet_wrap(~ series_name) +
     labs(x = "Número do episódio", y = "Nota dos usuários", 
          color = "Temporada", title = "Variações entre episódios por temporada e por série")
@@ -255,3 +255,55 @@ E de forma semelhante, __Mr Robot__ e __Sherlock__ posuem muitas variações com
 ### Conclusão
 
 Tanto avaliando pela __métrica 1__ como pela __métrica 2__, chegamos à conclusão que __Sherlock__ possui tanto a maior __amplitude__ entre os episódios como a maior __variação__ negativa.
+
+# Extras
+
+## Qual das séries ou temporadas tem episódios mais sem graça? (Um episódio é sem graça se ninguém nem ama nem odeia ele)
+
+Primeiramente iremos definir o que seria __amar__ ou __odiar__ um episódio. Para tal iremos utilizar algumas variáveis já conhecidas por nós: r1, r2, ..., r9, r10. Mais especificamente, r1 e r10 que denotam a nota mínima (1) e nota máxima (10).
+
+```{r}
+
+series_imdb.amor_e_odio =  series_imdb %>%
+    mutate(
+        rank_odiados = row_number(r1), # maior = mais odiado
+        rank_amados = row_number(r10), # maior = mais amado
+        amado_odiado = rank_amados * rank_odiados) # maior = mais amado E odiado
+    
+series_imdb.amor_e_odio %>%
+    ggplot(aes(
+        x = r1,
+        y = r10,
+        color = season,
+        size = amado_odiado,
+        label = season_ep
+    )) +
+    xlim(min = 0, max = 0.065) +
+    ylim(min = 0.2, max = 0.8) +
+    geom_hline(yintercept = 0.5) +
+    geom_vline(xintercept = 0.0325) +
+    geom_point(alpha = .7) +
+    geom_text(nudge_x = .006, nudge_y = -.02) +
+    facet_wrap(~series_name)
+
+```
+
+__IMPORTANTE: Os valores de r1 vão de 0 até 0.065 e os valores de r10 vão de 0.2 até 0.8, portanto a contagem de 50% será em relação a estes intervalos (como é possível observar visualmente)__
+
+A partir do gráfico nós podemos ter quatro observações:
+
+```
+Quadrante superior esquerdo: indica os episódios que tiveram mais de 50% de amor e menos de 50% de ódio.
+```
+
+```
+Quadrante superior direito: indica os episódios que tiveram mais de 50% de amor e também mais de 50% de ódio.
+```
+
+```
+Quadrante inferior esquerdo: indica os episódios que tiveram menos de 50% de amor e menos de 50% de ódio.
+```
+
+```
+Quadrante inferior direito: indica os episódios que tiveram menos de 50% de amor e mais de 50% de ódio.
+```
