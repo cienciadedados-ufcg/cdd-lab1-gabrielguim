@@ -33,6 +33,24 @@ series_imdb = read_csv(here("data/series_from_imdb.csv"),
 
 ```
 
+```{r}
+
+series_imdb %>%
+        mutate(series_name = paste(series_name, "- Temporada", season, sep = " ")) %>%
+        group_by(series_name, season) %>%
+        summarise(num_ep = n()) %>%
+        select(series_name, num_ep)
+
+```
+
+```
+Mr Robot - Possui duas temporadas com 10 e 12 episódios cada uma, respectivamente.
+
+Sense8 - Possui duas temporadas com 12 e 11 episódios cada uma, respectivamente.
+
+Sherlock - Possui quatro temporadas com 4, 3, 4 e 4 episódios cada uma, respectivamente.
+```
+
 Antes de iniciar as análises, é necessário informar que por tomaremos por _avaliação_ o significado literal, ou seja, a avaliação dada para cada episódio das séries escolhidas.
 
 ```{r}
@@ -44,7 +62,7 @@ summary(series_imdb %>%
 
 Além disso, considerando os dados do sumário acima, temos por menor _avaliação_ o valor 7.5, ou seja, iremos analisar informações apenas de r7, r8, r9 e r10 que indica a porcentagem de usuários que votaram nas notas 7, 8, 9 e 10 respectivamente.  
 
-Para o conjunto de dados que iremos trabalhar temos que a variável _avaliação_ se comporta desta maneira, como informam a visualização abaixo:
+Para o conjunto de dados que iremos trabalhar temos que a variável _avaliação_ se comporta desta maneira, como informa a visualização abaixo:
 
 ```{r}
 
@@ -79,11 +97,11 @@ series_imdb %>%
 
 ```
 
-Adotando essas formas de comparação, se adotarmos a __média__ como fator determinante para uma série ser _bem avaliada_ temos que a escolhida é __Mr Robot__. 
+Adotando essas formas de comparação, se escolhermos a __média__ como fator determinante para uma série ser _bem avaliada_ temos que a escolhida é __Mr Robot__. 
 
-Já se adotarmos a __mediana__, temos um aparente empate entre __Sense8__ e __Sherlock__.
+Já se escolhermos a __mediana__, temos um aparente empate entre __Sense8__ e __Sherlock__.
 
-Portanto, essa não é a resposta que queremos. Devemos utilizar outra métrica de avaliação.
+Portanto, essa não é a resposta que queremos. Devemos utilizar outra métrica de avaliação...
 
 No nosso conjunto de dados temos as variáveis r1, r2... r10, que descrevem a proporção de avaliações com notas de 1 a 10.
 ``` 
@@ -122,7 +140,7 @@ Se observarmos os episódios partindo do 10 em diante, é possível perceber cla
 
 ### Sherlock
 
-De forma semelhante a Sense8, Sherlock possui também uma porcentagem de r10 maior de 50% para mais da metade dos seus episódios, contudo, não apresenta a mesma constância. É possível perceber, a exemplo do episódio entre o 10 e 15 (talvez o 12 e 13) que há uma queda bem drástica. Que pode ser explicada ao analisar os episódios, onde um deles é um episódio extra de Natal _(The Abominable Bride)_.
+De forma semelhante a Sense8, Sherlock possui também uma porcentagem de r10 maior de 50% para mais da metade dos seus episódios, contudo, não apresenta a mesma constância. É possível perceber, a exemplo do episódio entre o 10 e 15 (talvez o 12 e 13) que há uma queda bem drástica. Que pode ser explicada ao analisar os episódios, onde um deles é um episódio extra de Natal _(The Abominable Bride)_ que conta uma história bastante confusa à primeira vista.
 
 ### Conclusão
 
@@ -180,7 +198,7 @@ series_imdb %>%
 
 ```
 
-A primeira vista é possível perceber uma diferença muito grande entre as temporadas, pois enquanto a primeira temporada possui mediana próxima de 8.6 com alguns valores considerados _outliers_ com avaliações muito mais baixas que o comum (7.5), a segunda temporada possui uma concentração de mais de __50%__ (considerando partes dos quartis) com avaliação superior à 9.0 o que nos diz que, da mesma forma que ocorreu na segunda temorada de Mr Robot, também temos aqui um consenso entre os espectadores da série.
+À primeira vista é possível perceber uma diferença muito grande entre as temporadas, pois enquanto a primeira temporada possui mediana próxima de 8.6 com alguns valores considerados _outliers_ com avaliações muito mais baixas que o comum (7.5), a segunda temporada possui uma concentração de mais de __50%__ (considerando partes dos quartis) com avaliação superior à 9.0 o que nos diz que, da mesma forma que ocorreu na segunda temorada de Mr Robot, também temos aqui um consenso entre os espectadores da série.
 
 ### Sherlock
 ```{r}
@@ -197,7 +215,7 @@ series_imdb %>%
 
 ```
 
-Apesar de ter poucos episódios por temporada, ainda assim é possível perceber o desenvolvimento da série. Nas transições de cada temporada é possível perceber mudanças muito descrepantes em relação a avaliação por episódio. O que podemos perceber de primeira é a queda de avaliação que acontece da terceira para a quarta temporada, onde a série tinha uma mediana de avaliação superior a 9.0 e na quarta temporada desceu abruptamente para 8.3.
+Apesar de ter poucos episódios por temporada, ainda assim é possível perceber o desenvolvimento da série. Nas transições de cada temporada é possível perceber mudanças muito discrepantes em relação a avaliação por episódio. O que podemos perceber de primeira é a queda de avaliação que acontece da terceira para a quarta temporada, onde a série tinha uma mediana de avaliação superior a 9.0 e na quarta temporada desceu abruptamente para 8.3.
 
 
 ### Conclusão
@@ -256,11 +274,11 @@ E de forma semelhante, __Mr Robot__ e __Sherlock__ posuem muitas variações com
 
 Tanto avaliando pela __métrica 1__ como pela __métrica 2__, chegamos à conclusão que __Sherlock__ possui tanto a maior __amplitude__ entre os episódios como a maior __variação__ negativa.
 
-# Extras
+# Extra
 
 ## Qual das séries ou temporadas tem episódios mais sem graça? (Um episódio é sem graça se ninguém nem ama nem odeia ele)
 
-Primeiramente iremos definir o que seria __amar__ ou __odiar__ um episódio. Para tal iremos utilizar algumas variáveis já conhecidas por nós: r1, r2, ..., r9, r10. Mais especificamente, r1 e r10 que denotam a nota mínima (1) e nota máxima (10).
+Primeiramente iremos definir o que seria __amar__ ou __odiar__ um episódio. Para tal iremos utilizar algumas variáveis já conhecidas por nós: r1, r2, ..., r9, r10. Mais especificamente, r1 e r10 que denotam a nota mínima (1) e nota máxima (10) respectivamente.
 
 ```{r}
 
@@ -293,17 +311,58 @@ __IMPORTANTE: Os valores de r1 vão de 0 até 0.065 e os valores de r10 vão de 
 A partir do gráfico nós podemos ter quatro observações:
 
 ```
-Quadrante superior esquerdo: indica os episódios que tiveram mais de 50% de amor e menos de 50% de ódio.
+Quadrante superior esquerdo (1): indica os episódios que tiveram mais de 50% de amor e menos de 50% de ódio.
 ```
 
 ```
-Quadrante superior direito: indica os episódios que tiveram mais de 50% de amor e também mais de 50% de ódio.
+Quadrante superior direito (2): indica os episódios que tiveram mais de 50% de amor e também mais de 50% de ódio.
 ```
 
 ```
-Quadrante inferior esquerdo: indica os episódios que tiveram menos de 50% de amor e menos de 50% de ódio.
+Quadrante inferior esquerdo (3): indica os episódios que tiveram menos de 50% de amor e menos de 50% de ódio.
 ```
 
 ```
-Quadrante inferior direito: indica os episódios que tiveram menos de 50% de amor e mais de 50% de ódio.
+Quadrante inferior direito (4): indica os episódios que tiveram menos de 50% de amor e mais de 50% de ódio.
 ```
+
+Iremos considerar um episódio/temporada como sendo __sem graça__ aqueles que estão no terceiro quadrante, ou seja, sem muito amor e sem muito ódio.
+
+Dito isto, podemos analisar que todas as séries possuem uma quantidade proporcionalmente semelhante de episódios nesse quadrante. Analisando por temporada, temos que __Mr Robot__ tem boa parte dos seus episódios tanto da primeira como da segunda temporada considerados como __sem graça__ enquanto __Sense8__ possui basicamente os da primeira temporada. __Sherlock__ por sua vez também tem seus episódios dividos entre amados e odiados e além disso possui um ponto extremo que é o episódio 4 da quarta temporada, que está no quarto quadrante.
+
+Visto que boa parte dos episódios estão no terceiro quadrante, não temos uma visualização exata de quem está tendo os episódios mais sem graça... Contudo, é possível perceber que no geral a primeira temporada é tida como mais __sem graça__, pois todas as séries possuem mais de 50% dos seus episódios dentro do terceiro quadrante. 
+
+Para tentarmos chegar a uma conclusão de outra forma, vamos separar dentre os que estão no terceiro quadrante, aqueles que têm menos 25% de amor e ódio. Observe a visualização abaixo:
+
+```{r}
+
+series_imdb.amor_e_odio %>%
+    filter(r1 < 0.0325, r10 < 0.5) %>%
+    ggplot(aes(
+        x = r1,
+        y = r10,
+        color = season,
+        size = amado_odiado,
+        label = season_ep
+    )) +
+    xlim(min = 0, max = 0.0325) +
+    ylim(min = 0.2, max = 0.5) +
+    geom_hline(yintercept = 0.35, color="red") +
+    geom_vline(xintercept = 0.01625, color="red") +
+    geom_point(alpha = .7) +
+    geom_text(nudge_x = .001, nudge_y = -.01) +
+    facet_wrap(~series_name)
+
+```
+
+Fazendo a divisão de quadrantes de forma _recursiva_ dentro do terceiro quadrante, podemos usar as classificações de forma análoga aos quadrantes definidos acima. 
+
+As linhas vermelhas indicam as novas delimitações dos quadrantes, onde o terceiro quadrante contém os episódios que são 75% menos amados e odiados que os demais. Deste modo, é possível perceber que __Mr Robot__ e __Sense8__ não possuem nenhum episódio, enquanto __Sherlock__ possui três.
+
+Portanto, para concluir qual das séries possui mais episódios __sem graça__, podemos dizer a seguinte frase:
+
+```
+Ora ora, temos um Xeroque Rolmes por aqui.
+```
+
+Sim, foi __Sherlock__ a mais __sem graça__. Haha :^) 
