@@ -1,0 +1,53 @@
+---
+title: "Ciência de Dados Descritiva - Lab1 (EDA) - Checkpoint 3"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float: yes
+  html_notebook:
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+theme_set(theme_bw())
+```
+
+# Informações iniciais
+
+```{r}
+
+dataset = read_csv(here("data/series_from_imdb.csv"), 
+                    progress = FALSE,
+                    col_types = cols(.default = col_double(), 
+                                     series_name = col_character(), 
+                                     episode = col_character(), 
+                                     url = col_character(),
+                                     season = col_character()))
+
+```
+
+Para a análise 
+
+```{r}
+
+mean_series <- dataset %>%
+                group_by(series_name) %>%
+                summarise(media_geral = mean(user_rating)) %>%
+                arrange(media_geral) %>% 
+                slice(c(1:5, (n()-5): n()))
+
+series_imdb <- merge(mean_series, dataset)
+
+```
+
+
+# Perguntas
+
+## A quantidade de espectadores cresce/decresce ao passo que as avaliações também crescem/decrescem?
+
+## Quando o primeiro episódio da temporada possui uma nota menor que a média da temporada, a quantidade de votantes tende a cair?
+
