@@ -19,7 +19,6 @@ theme_set(theme_bw())
 # Informações iniciais
 
 ```{r}
-
 dataset = read_csv(here("data/series_from_imdb.csv"), 
                     progress = FALSE,
                     col_types = cols(.default = col_double(), 
@@ -27,27 +26,144 @@ dataset = read_csv(here("data/series_from_imdb.csv"),
                                      episode = col_character(), 
                                      url = col_character(),
                                      season = col_character()))
-
 ```
 
-Para a análise 
+Para a análise, iremos calcular a média geral de episódios e temporada para cada série e em seguida iremos selecionar as 5 melhores e as 5 piores dentre as séries selecionadas, totalizando 10 séries para a nossa análise.
+
+As séries foram selecionadas a partir da quantidade mínima de episódios para que tenhamos uma visualização mais fácil de entender. O valor escolhido foi `total_ocurr <= 20`, onde **total_ocurr** representa a quantidade total de episódios que uma série possui.
 
 ```{r}
 
 mean_series <- dataset %>%
                 group_by(series_name) %>%
-                summarise(media_geral = mean(user_rating)) %>%
+                summarise(media_geral = mean(user_rating),
+                          total_ocurr = n()) %>%
+                filter(total_ocurr %in% c(10:20)) %>%
                 arrange(media_geral) %>% 
-                slice(c(1:5, (n()-5): n()))
+                slice(c(1:5, (n() - 4): (n())))
 
-series_imdb <- merge(mean_series, dataset)
+series_imdb <- merge(mean_series, dataset) %>% arrange(media_geral)
 
 ```
 
+Como é possível perceber na exibição abaixo:
+
+```{r}
+
+series_imdb %>% group_by(series_name) %>% distinct(series_name, media_geral)
+
+```
+
+As variáveis escolhidas para alguns parâmetros de análise se comportam da seguinte maneira:
+
+```{r}
+series_imdb %>% select(media_geral, total_ocurr) %>% summary()
+```
 
 # Perguntas
 
 ## A quantidade de espectadores cresce/decresce ao passo que as avaliações também crescem/decrescem?
 
+```{r}
+
+series_imdb %>% 
+    ggplot() +
+    geom_line(aes(x = user_votes, y = user_rating, color = "Espectador/Avaliação")) +
+    geom_point(aes(x = user_votes, y = user_rating, color = "Espectador/Avaliação")) +
+    facet_wrap(~ series_name, scales = "free") +
+    labs(x = "Espectadores", y = "Avaliação", 
+         color = "Critério") +
+    theme(axis.text.x = element_text(angle = 35, hjust = .8))
+
+```
+
+É possível perceber que em alguns casos essa relação entre espectadores/avaliação é clara mas em outros não, ou seja, não há uma regra ou um padrão. Em **Are You There**, por exemplo, temos que a série começa com uma nota já baixa e que ao decorrer da série há muitas irregularidades mas as ocorrências de notas baixas cresceram ao passo que o número de espectadores também cresceu, dando a entender que mais espectadores também não gostaram daquela série.
+
+Um caso interessante é em **Steven Seagal: Lawman**, onde a série começa em uma nota muito baixa, em seguida há um pico subido a média em mais de 2 pontos e em seguida desce para um valor próximo a *6.5* e ali permanece (com algumas variações) até ao final da série.
+
+Em **Bedlam**, por exemplo, é mais fácil de perceber que aconteceu o que viemos analisar, ao passo que a quantidade de usuários aumenta, a avaliação também aumenta.
+
+### Conclusão
+
+Não é uma relação linear muito clara de se observar para o conjunto de dados que escolhemos e também não pode ser entendida como uma regra, apesar de termos alguns exemplos.
+
+### Dado que não há uma relação linear, há ao menos uma relação entre as variáveis?
+
+A quantidade de espectadores/votantes impacta na avaliação da série, isso é fácil de perceber ao obsevar o  mesmo gráfico acima, a cada intervalo de votantes (ex: 10 a 20 na série **Steven Seagal: Lawman**) a avaliação sobre uma alteração, indicando que a série melhorou/piorou e foi vista com melhores/piores olhos.
+
 ## Quando o primeiro episódio da temporada possui uma nota menor que a média da temporada, a quantidade de votantes tende a cair?
 
+Para isso, iremos colocar em um conjunto de dados as séries e suas respectivas médias por temporada:
+
+```{r}
+mean_season_series <- series_imdb %>% 
+                group_by(series_name, season) %>%
+                summarise(mean_season = mean(user_rating)) %>%
+                merge(series_imdb)
+```
+
+Em seguida, vamos separar outro conjunto contendo os seguites campos:
+
+```{r}
+series_below_mean <- series_imdb %>%
+                filter(season_ep == 1) %>% 
+                mutate(rate_first_ep = user_rating) %>%
+                select(series_name, season, user_votes, season_ep, rate_first_ep)
+```
+
+Com uma junção dos dois conjuntos, obteremos um terceiro conjunto que vai conter as séries que possuem o primeiro episódio da temporada com nota menor que a média da temporada. 
+
+```{r}
+
+filtered_series <- left_join(series_below_mean, mean_season_series, 
+                        by = c("series_name" = "series_name", "season" = "season")) %>%
+                    filter(rate_first_ep < mean_season)
+
+filtered_series %>%
+    arrange(series_name, season_ep.y) %>%
+    ggplot() +
+    geom_point(aes(x = user_votes.y, y = season_ep.y, color = season)) +
+    geom_line(aes(x = user_votes.y, y = season_ep.y, color = season)) +
+    facet_wrap(~ series_name, scales = "free") +
+    labs(x = "Votantes", y = "Episódio na Temporada", 
+         color = "Temporada") +
+    theme(axis.text.x = element_text(angle = 35, hjust = .8)) +
+    coord_flip()
+
+```
+
+Na exibição acima, temos as séries que tiveram seus episódios da primeira temporada avaliados com nota inferior à média da temporada.
+
+Podemos observar que **Sherlock** tem suas duas primeiras temporadas avaliadas com nota superior e que nas duas próximas temporadas houve uma queda. Ao final da terceira tempoada, temos uma quantidade de mais de 22500 votantes e a começo da quarta temporada, esse valor cai drásticamente para um pouco mais de 15000.
+
+De forma análoga, temos **The Last Kingdom** que teve uma queda de um pouco mais de 700 espectadores de uma temporada para outra.
+
+### Conclusão 
+
+É possível perceber que geralmente uma temporada começa com menos votantes em relação a temporada anterior. As 5 primeiras séries possuem uma queda em relação a quantidade de votantes ao decorrer da série. Talvez isso aconteça porque a série não possui um primeiro episódio tão chamativo, o que faz que as pessoas desistam de assistir o restante da série.
+
+### De outro modo, quando o primeiro episódio da temporada possui uma nota maior que a média, qual o comportamento?
+
+Ao invés de selecionarmos as que possui nota menor, iremos selecionar de forma análoga, os que possuem nota maior que a média
+```{r}
+
+filtered_series_p <- left_join(series_below_mean, mean_season_series, 
+                        by = c("series_name" = "series_name", "season" = "season")) %>%
+                    filter(rate_first_ep >= mean_season)
+
+filtered_series_p %>%
+    arrange(series_name, season_ep.y) %>%
+    ggplot() +
+    geom_point(aes(x = user_votes.y, y = season_ep.y, color = season)) +
+    geom_line(aes(x = user_votes.y, y = season_ep.y, color = season)) +
+    facet_wrap(~ series_name, scales = "free") +
+    labs(x = "Votantes", y = "Episódio na Temporada", 
+         color = "Temporada") +
+    theme(axis.text.x = element_text(angle = 35, hjust = .8)) +
+    coord_flip()
+
+```
+
+### Conclusão
+
+É possível perceber que **não necessariamente** ocorre de forma análoga ao que vimos antes. Pois por exemplo, em **Sherlock** temos uma crescente na primeira temporada e em seguida, na segunda temporada (apesar de ter uma queda entre alguns episódios) mas já em **Bedlam** vemos exatamente o contrário: a primeira temporada começando com mais espectadores que a segunda temporada, a qual teve uma queda de certa forma linear onde terminou a primeira temporada na faixa de 40 votantes e começou a segunda com um pouco menos de 40, como se tivesse continuado a decair.
