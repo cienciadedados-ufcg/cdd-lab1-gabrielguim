@@ -1,0 +1,77 @@
+---
+title: "Visão interativa sobre as Séries do IMDB"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(highcharter)
+theme_set(theme_bw())
+```
+
+```{r}
+
+series_imdb = read_csv(here("data/series_from_imdb.csv"), 
+                    progress = FALSE,
+                    col_types = cols(.default = col_double(), 
+                                     series_name = col_character(), 
+                                     episode = col_character(), 
+                                     url = col_character(),
+                                     season = col_character())) %>% 
+    filter(series_name %in% c("Sherlock", "Mr Robot", "Sense8"))
+
+```
+
+# Qual das séries que você escolheu tem episódios de qualidade mais irregular segundo o IMDB? A diferença é grande? Pequena?
+
+# Métrica 1 - Amplitude
+
+Para avaliar a irregularidade da qualidade de um episódio, iremos utilizar o conceito de amplitude, ou seja, uma série possui episódios irregulares quando a diferença entre um episódio e seu próximo se torna muito grande.
+
+```{r}
+
+series_it <- series_imdb %>%
+    mutate(user_rating.lag = if_else(is.na(lag(user_rating)), 0, user_rating - lag(user_rating)))
+
+ series_it %>% group_by(series_name) %>% hchart("line",
+         hcaes(x = series_ep, 
+               y = user_rating.lag, 
+               group = season)
+         )
+
+```
+
+Para esta visualização, podemos perceber claramente que há muita variação de um episódio para outro em __Sherlock__. Apesar de também vermos muita variação nas outras séries, o que acontece em __Sherlock__ é algo mais discrepante, visto que as distâncias de um episódio e o seu próximo são bem maiores do que nas outras séries, que possuem sim variações mas com pouca amplitude. 
+
+Outra coisa importante é que apesar de __Sense8__ possuir descidas e subidas nas avaliações de seus episódios, podemos ver também que é a série em que mais de __50%__ dos seus episódios estão acima da linha _(eixo y = 0)_, ou seja, possui uma variação positiva e portanto podemos pensar que é uma série mais constante mas com algumas quedas bruscas.
+
+Portanto, podemos concluir que a série que possui qualidade mais irregular entre seus episódios é __Sherlock__.
+
+# Métrica 2 - Variação
+
+De outra forma...
+
+```{r}
+
+series_imdb %>%
+    group_by(series_name) %>%
+    mutate(user_rating.lag = if_else(is.na(lag(user_rating)), 0, user_rating - lag(user_rating))) %>%
+    summarise(mean_rating_lag = mean(user_rating.lag)) %>%
+    ggplot(aes(series_name)) +
+    geom_point(aes(y = mean_rating_lag, color = 'Média')) +
+    labs(x = "Série", y = "Variação de Avaliação", color = "Métrica")
+
+```
+
+Podemos visualizar que a média, nesse caso, nos mostra se a variação é positiva ou negativa em relação a cada episódio avaliado. 
+
+Conseguimos ver que __Sense8__, como visto no gráfico mais acima possui mais de __50%__ dos seus episódios com variação positiva, ou seja, acima da linha _(eixo y = 0)_. O que pode ser percebido nessa visualização.
+
+E de forma semelhante, __Mr Robot__ e __Sherlock__ posuem muitas variações com grande amplitude passando pela linha _(eixo y = 0)_, ou seja, episódios com avaliações __irregulares__ e uma variação negativa. O que também pode ser percebido na visualização.
+
+# Conclusão
+
+Tanto avaliando pela __métrica 1__ como pela __métrica 2__, chegamos à conclusão que __Sherlock__ possui tanto a maior __amplitude__ entre os episódios como a maior __variação__ negativa.
