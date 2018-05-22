@@ -1,18 +1,19 @@
 ---
-title: "Visão interativa sobre as Séries do IMDB"
+title: "Análise interativa sobre as Séries do IMDB"
 output:
   html_document:
     df_print: paged
 ---
 
-```{r setup, echo=FALSE, results="hide", warning=FALSE, message=FALSE}
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(here)
 library(highcharter)
+library(htmltools)
 theme_set(theme_bw())
 ```
 
-```{r}
+```{r echo=FALSE}
 
 series_imdb = read_csv(here("data/series_from_imdb.csv"), 
                     progress = FALSE,
@@ -25,22 +26,37 @@ series_imdb = read_csv(here("data/series_from_imdb.csv"),
 
 ```
 
-# Qual das séries que você escolheu tem episódios de qualidade mais irregular segundo o IMDB? A diferença é grande? Pequena?
+# Qual das séries que você escolheu tem episódios de qualidade mais irregular segundo o IMDB?
 
 # Métrica 1 - Amplitude
 
 Para avaliar a irregularidade da qualidade de um episódio, iremos utilizar o conceito de amplitude, ou seja, uma série possui episódios irregulares quando a diferença entre um episódio e seu próximo se torna muito grande.
 
-```{r}
+```{r echo=FALSE}
 
 series_it <- series_imdb %>%
-    mutate(user_rating.lag = if_else(is.na(lag(user_rating)), 0, user_rating - lag(user_rating)))
+    mutate(user_rating_lag = if_else(is.na(lag(user_rating)), 0, user_rating - lag(user_rating))) %>%
+    mutate(series_name = factor(series_name)) %>%
+    mutate(season = factor(season))
 
- series_it %>% group_by(series_name) %>% hchart("line",
-         hcaes(x = series_ep, 
-               y = user_rating.lag, 
-               group = season)
-         )
+map(levels(series_it$series_name), function(x){
+  series_it %>%
+    filter(series_name == x) %>% 
+    hchart("line", hcaes(x = series_ep, y = user_rating_lag, group = season)) %>%
+    hc_add_theme(hc_theme_smpl()) %>% 
+    hc_title(text = x) %>%
+    hc_xAxis(title = list(text = "Número do episódio"), tickInterval = 1) %>%
+    hc_yAxis(title = list(text = "Amplitude por episódio"),
+             plotLines = list(
+             list(color = "black",
+                  width = 2,
+                  value = 0))) %>%
+    hc_tooltip(pointFormat = "Nome: {point.episode} <br> Nota: {point.user_rating} <br> Amplitude: {point.user_rating_lag}") %>%
+    hc_legend(title = list(text = "Temporada"), align = "right", verticalAlign = "top",
+            layout = "vertical", x = 0, y = 50)
+
+  }) %>% 
+  hw_grid(rowheight = 220, ncol = 2)  %>% browsable()
 
 ```
 
@@ -54,15 +70,18 @@ Portanto, podemos concluir que a série que possui qualidade mais irregular entr
 
 De outra forma...
 
-```{r}
+```{r echo=FALSE}
 
-series_imdb %>%
+series_var <- series_imdb %>%
     group_by(series_name) %>%
     mutate(user_rating.lag = if_else(is.na(lag(user_rating)), 0, user_rating - lag(user_rating))) %>%
-    summarise(mean_rating_lag = mean(user_rating.lag)) %>%
-    ggplot(aes(series_name)) +
-    geom_point(aes(y = mean_rating_lag, color = 'Média')) +
-    labs(x = "Série", y = "Variação de Avaliação", color = "Métrica")
+    summarise(mean_rating_lag = mean(user_rating.lag))
+
+    hchart(series_var, "scatter", hcaes(x = series_name, y = mean_rating_lag)) %>%
+    hc_add_theme(hc_theme_smpl()) %>% 
+    hc_xAxis(title = list(text = "Série")) %>%
+    hc_yAxis(title = list(text = "Média de variação da avaliação"), tickInterval = 0.05) %>%
+    hc_tooltip(pointFormat = "Nome: {point.series_name} <br> Média: {point.mean_rating_lag}")
 
 ```
 
@@ -74,4 +93,4 @@ E de forma semelhante, __Mr Robot__ e __Sherlock__ posuem muitas variações com
 
 # Conclusão
 
-Tanto avaliando pela __métrica 1__ como pela __métrica 2__, chegamos à conclusão que __Sherlock__ possui tanto a maior __amplitude__ entre os episódios como a maior __variação__ negativa.
+Tanto avaliando pela __métrica 1__ como pela __métrica 2__, chegamos à conclusão que __Sherlock__ possui tanto a maior __amplitude__ entre os episódios como a maior __variação__ negativa. Portanto, __Sherlock__ é a série com episódios de qualidade mais irregular.
