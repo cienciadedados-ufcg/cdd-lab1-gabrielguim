@@ -76,6 +76,8 @@ series_imdb %>%
 
 Dados os valores dos quartis, é possível perceber que pelo menos __50%__ dos valores estão concentrados em avaliações entre 8.6 e 9.2. Isso significa que as séries selecionadas possuem avaliações bastante positivas, visto que a mediana está em 8.9. 
 
+> Nesse ponto do texto, seria interessante deixar claro para o leitor de onde foram extraídas as informações de r7, r8..., além do que já é feito, de informar o significado de cada uma das variáveis. Também seria bacana explicar como realizar a leitura das informações para, por exemplo, perceber que 50% dos valores estão concentrados em determinadadas notas.
+
 # Perguntas
 
 ## Qual das séries que você escolheu é mais bem avaliada no IMDB? A diferença é grande? Pequena? 
@@ -366,3 +368,7 @@ Ora ora, temos um Xeroque Rolmes por aqui.
 ```
 
 Sim, foi __Sherlock__ a mais __sem graça__. Haha :^) 
+
+> Comentários
+
+>> Texto muito bom e completo, descrevendo muito bem tudo o que está sendo feito e facilitando a compreensão para o leitor. Parabéns!
